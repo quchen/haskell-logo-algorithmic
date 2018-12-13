@@ -34,7 +34,6 @@ module Geometry.Core (
     , PolygonError(..)
     , validatePolygon
     , pointInPolygon
-    , countEdgeTraversals
     , polygonAverage
     , polygonCircumference
     , polygonArea
@@ -85,6 +84,7 @@ module Geometry.Core (
 import Control.Monad
 import Data.Fixed
 import Data.List
+import Data.Ord
 import Text.Printf
 
 import Util
@@ -460,39 +460,46 @@ polygonOrientation polygon
     | signedPolygonArea polygon >= Area 0 = PolygonPositive
     | otherwise                           = PolygonNegative
 
--- | Ray-casting algorithm. Counts how many times a ray coming from infinity
--- intersects the edges of an object.
---
--- The most basic use case is 'pointInPolygon', but it can also be used to find
--- out whether something is inside more complicated objects, such as nested
--- polygons (e.g. polygons with holes).
-countEdgeTraversals
-    :: Vec2   -- ^ Point to check
-    -> [Line] -- ^ Geometry
-    -> Int    -- ^ Number of edges crossed
-countEdgeTraversals p edges = length intersections
-  where
-    -- The test ray comes from outside the polygon, and ends at the point to be
-    -- tested.
-    --
-    -- This ray is numerically sensitive, because exactly crossing a corner of
-    -- the polygon counts as two traversals (with each adjacent edge), when it
-    -- should only be one.  For this reason, we subtract 1 from the y coordinate
-    -- as well to get a bit of an odd angle, greatly reducing the chance of
-    -- exactly hitting a corner on the way.
-    testRay = Line (Vec2 (leftmostPolyX - 1) (pointY - 1)) p
-      where
-        leftmostPolyX = minimum (edges >>= \(Line (Vec2 x1 _) (Vec2 x2 _)) -> [x1,x2])
-        Vec2 _ pointY = p
-
-    intersections = filter (\edge ->
-        case intersectionLL testRay edge of
-            (_, IntersectionReal) -> True
-            _other -> False)
-        edges
-
 pointInPolygon :: Vec2 -> Polygon -> Bool
-pointInPolygon p poly = odd (countEdgeTraversals p (polygonEdges poly))
+pointInPolygon p polygon@(Polygon corners)
+  = let testRay = nonIntersectingRay p corners
+        intersections = filter
+            (\edge ->
+                case snd (intersectionLL testRay edge) of
+                    IntersectionVirtualInsideR -> True
+                    IntersectionReal -> True
+                    _other -> False)
+            (polygonEdges polygon)
+        oddLength = foldl' (\acc _ -> not acc) False
+    in oddLength intersections
+
+-- | Construct a line starting at a point that does not intersect any of the
+-- obstacle points provided.
+--
+-- In other words, if you’re standing in a forest, in which direction are the
+-- fewest trees?
+--
+-- Useful to avoid numerical instabilities in algorithms that rely on a certain
+-- test line not hitting a polygon corner.
+nonIntersectingRay :: Vec2 -> [Vec2] -> Line
+nonIntersectingRay origin obstacles
+  -- = let
+  --       middleRays = zipWith (\p q -> Line origin (middle p q))
+  --                            obstacles
+  --                            (tail (cycle obstacles))
+  --       zipWith3 (\l x r ->
+  --           middleRays
+  --           (tail (cycle middleRays))
+  --           (tail (tail (cycle middleRays)))
+  --   in
+  = let middle p q = 0.5 *. (p +. q)
+        sortedRays = sortOn angleOfLine [ Line origin obstacle | obstacle <- obstacles ]
+        dings = zipWith (\l1@(Line _ o1) l2@(Line _ o2) -> (angleBetween l1 l2, middle o1 o2))
+                        sortedRays
+                        (tail (cycle sortedRays))
+        absAngle (Angle a) = Angle (abs a)
+        (_maxGapAngle, maxGapMiddle) = maximumBy (comparing (absAngle . fst)) dings
+    in Line origin maxGapMiddle
 
 data PolygonError
     = NotEnoughCorners Int
