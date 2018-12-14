@@ -3,8 +3,8 @@ module Test.SimpleOperations (tests) where
 
 
 import Data.Foldable
-import Graphics.Rendering.Cairo hiding (x, y, transform)
 import Data.List
+import Graphics.Rendering.Cairo hiding (transform, x, y)
 
 import Draw
 import Geometry
@@ -168,7 +168,8 @@ pointInPolygonRegression = testGroup "Point-in-polygon regressions"
             , (Vec2 0.0 100.0,   Polygon [Vec2 0.0 0.0,     Vec2 100.0 0.0,   Vec2 100.0 100.0])
             , (Vec2 100.0 0.0,   Polygon [Vec2 0.0 0.0,     Vec2 100.0 100.0, Vec2 0.0 100.0])
             , (Vec2 100.0 100.0, Polygon [Vec2 0.0 0.0,     Vec2 100.0 0.0,   Vec2 0.0 100.0])
-            ] ]
+            ]
+    ]
   where
     regressionTestOutside point polygon = assertBool
         "Point should be outside of the polygon"

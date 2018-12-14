@@ -485,14 +485,15 @@ pointInPolygon p polygon@(Polygon corners)
 -- test line not hitting a polygon corner.
 nonIntersectingRay :: Vec2 -> [Vec2] -> Line
 nonIntersectingRay origin obstacles
-  = let middle p q = 0.5 *. (p +. q)
+  = let maximallyDistantAngle l1 l2 = let Angle a1 = angleOfLine l1
+                                          Angle a2 = angleOfLine l2
+                                      in rad (pi + (a1 + a2) / 2)
         sortedRays = sortOn angleOfLine [ Line origin obstacle | obstacle <- obstacles ]
-        dings = zipWith (\l1@(Line _ o1) l2@(Line _ o2) -> (angleBetween l1 l2, middle o1 o2))
+        dings = zipWith (\l1 l2 -> (angleBetween l1 l2, maximallyDistantAngle l1 l2))
                         sortedRays
                         (tail (cycle sortedRays))
-        absAngle (Angle a) = Angle (abs a)
-        (_maxGapAngle, maxGapMiddle) = maximumBy (comparing (absAngle . fst)) dings
-    in Line origin maxGapMiddle
+        (_maxGapAngle, maxGapMiddleAngle) = maximumBy (comparing fst) dings
+    in angledLine origin maxGapMiddleAngle (Distance 1)
 
 data PolygonError
     = NotEnoughCorners Int
