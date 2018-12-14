@@ -41,9 +41,10 @@ shatterProcessS recurse acceptCut polygon
     | recurse polygon = do
         cutPieces <- randomCutS acceptCut polygon
         let triangulated = concatMap triangulate cutPieces
-        if acceptCut triangulated
-            then fmap concat (traverse (shatterProcessS recurse acceptCut) triangulated)
-            else shatterProcessS recurse acceptCut polygon
+        pure triangulated
+        -- if acceptCut triangulated
+        --     then fmap concat (traverse (shatterProcessS recurse acceptCut) triangulated)
+        --     else shatterProcessS recurse acceptCut polygon
     | otherwise = pure [polygon]
 
 runShatterProcess
@@ -57,7 +58,11 @@ runShatterProcess recurse acceptCut initialPolygon gen
 
 drawing :: Render ()
 drawing = do
-    let recurse polygon = minMaxAreaRatio (polygon : haskellLogo') >= 1/64
+    let addArea (Area a) (Area b) = Area (a + b)
+        totalArea = foldl' (\acc poly -> acc `addArea` polygonArea poly) (Area 0) haskellLogo'
+        recurse polygon = let Area a = polygonArea polygon
+                              Area b = totalArea
+                          in a >= b/64
         acceptCut polygons = minMaxAreaRatio polygons >= 1/3
         shattered = runShatterProcess recurse acceptCut haskellLogo' (mkStdGen 16)
     translate 10 10
