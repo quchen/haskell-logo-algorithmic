@@ -13,6 +13,7 @@ import Util
 
 import Test.Common
 import Test.Tasty
+import Test.Helpers
 import Test.Tasty.HUnit
 
 
@@ -64,10 +65,8 @@ testHaskellLogo = testCase "Haskell logo" (test >> assertions)
         wigglePoly :: Polygon -> Polygon
         wigglePoly (Polygon corners) = Polygon (map wiggle corners)
         wiggle :: Vec2 -> Vec2
-        wiggle v@(Vec2 x y)
-          = let seed = let (x1,x2) = decodeFloat x
-                           (y1,y2) = decodeFloat y
-                       in fromIntegral x1 + x2 + fromIntegral y1 + y2 + 1
+        wiggle v
+          = let Seed seed = makeSeed v
                 (angle, _gen') = randomR (0, 360) (mkStdGen seed)
             in moveRad (Angle angle) (Distance 10) v
 
