@@ -54,7 +54,15 @@ over quickly.
 
 ![](./reflection.svg)
 
-![](./simple_operations.svg)
+![](./simple_operations/1_rotate_line.svg)
+
+![](./simple_operations/2_perpendicular_bisector.svg)
+
+![](./simple_operations/3_line_through.svg)
+
+![](./simple_operations/4_point_in_square.svg)
+
+![](./simple_operations/5_point_in_convex.svg)
 
 ![](./triangulation/1_square.svg)
 

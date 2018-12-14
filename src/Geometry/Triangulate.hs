@@ -19,8 +19,10 @@ triangulate polygon = case clipEar polygon of
 
 isEar :: Polygon -> PolygonOrientation -> [Vec2] -> Bool
 isEar candidate parentOrientation forbiddenPoints
-  = not (any (\r -> pointInPolygon r candidate) forbiddenPoints)
-    && parentOrientation == polygonOrientation candidate
+  =
+    not (any (\r -> pointInPolygon r candidate) forbiddenPoints)
+    &&
+    parentOrientation == polygonOrientation candidate
 
 -- | Ear-clipping algorithm – find an isolated triangle we can cut off. Meant to
 -- be iterated until the input is fully triangulated. Probably terrible

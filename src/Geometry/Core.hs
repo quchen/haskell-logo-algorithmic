@@ -1,6 +1,8 @@
 {-# LANGUAGE BangPatterns #-}
 
 module Geometry.Core (
+nonIntersectingRay,
+
     -- * Primitives
     -- ** Vectors
     Vec2(..)
@@ -462,11 +464,11 @@ polygonOrientation polygon
 
 pointInPolygon :: Vec2 -> Polygon -> Bool
 pointInPolygon p polygon@(Polygon corners)
-  = let testRay = nonIntersectingRay p corners
+  = let testRay = resizeLine (const maxDistance) (nonIntersectingRay p corners)
+        maxDistance = Distance (maximum (map (\q -> normSquare (q -. p)) corners))
         intersections = filter
             (\edge ->
                 case snd (intersectionLL testRay edge) of
-                    IntersectionVirtualInsideR -> True
                     IntersectionReal -> True
                     _other -> False)
             (polygonEdges polygon)
@@ -483,15 +485,6 @@ pointInPolygon p polygon@(Polygon corners)
 -- test line not hitting a polygon corner.
 nonIntersectingRay :: Vec2 -> [Vec2] -> Line
 nonIntersectingRay origin obstacles
-  -- = let
-  --       middleRays = zipWith (\p q -> Line origin (middle p q))
-  --                            obstacles
-  --                            (tail (cycle obstacles))
-  --       zipWith3 (\l x r ->
-  --           middleRays
-  --           (tail (cycle middleRays))
-  --           (tail (tail (cycle middleRays)))
-  --   in
   = let middle p q = 0.5 *. (p +. q)
         sortedRays = sortOn angleOfLine [ Line origin obstacle | obstacle <- obstacles ]
         dings = zipWith (\l1@(Line _ o1) l2@(Line _ o2) -> (angleBetween l1 l2, middle o1 o2))
